@@ -52,7 +52,8 @@ $ mvn clean package
 
 2. In the target directory is the compiled framework, to execute use the following command:
 ``` bash
-$ java -jar target/DynamicVMPFramework.jar parameter
+$ java -jar target/DynamicVMPFramework.jar inputs/ivmp.conf inputs/vmpr.conf inputs/scenarios.con
+f outputs/
 ```
 
 ##
@@ -61,6 +62,7 @@ $ java -jar target/DynamicVMPFramework.jar parameter
 
 ##### Parameter File Structure
 
+ivmp.conf:
 1. APPROACH = Algorithm approach
  * CENTRALIZED
  * DISTRIBUTED -> This approach will automatically launch the distributed approach and you don't need to specify the following inputs: VMPr, VMPr_TRIGGERING, VMPr_RECOVERING.
@@ -71,6 +73,8 @@ $ java -jar target/DynamicVMPFramework.jar parameter
  * WF -> Worst Fit
  * FFD -> First Fit Decreasing
  * BFD -> Best Fit Decreasing
+
+vmpr.conf:
 3. VMPr = Algorithm for the reconfiguration phase (VMPr).
  * MEMETIC -> Memetic Algorithm
  * ACO -> Ant Colony Optimization
@@ -113,15 +117,10 @@ quicker as pheromone constant grows
 25. N_ANTS = Number of ants used for ACO
 26. ACO_ITERATIONS = Number of iterations to be performed in ACO
 to return a solution
+
+scenarios.conf:
 27. SCENARIOS = List of Request
 
 #### Output Files
-The framework generates the following files:
-- *economical_penalties*: Average economical penalties per each SLA violation. 
-- *economical_revenue*: Average ecomical revenue per each VM hosted in the main provider.
-- *leasing_costs*: Average economical revenue lost per each VM hosted in an alternative provider from federation.
-- *power_consumption*: Average power energy consumed 
-- *reconfiguration_call_times*: Number of reconfiguration calls.
-- *wasted_resources*: Average of wasted resources (one column per resource)
-- *wasted_resources_ratio*: Average of wasted resources (considering all resources)
-- *scenarios_scores*: Score per each executed scenario.
+The framework generates the following file:
+- *scenarios_score: contains F1, F2, F3 values

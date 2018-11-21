@@ -88,9 +88,10 @@ public class ThresholdBasedApproach {
 
             //check if the request corresponds to a vm that is being migrated
             if (nextTimeUnit!= -1 && isMigrationActive && DynamicVMP.isVmBeingMigrated(request.getVirtualMachineID(),
-                    vmsToMigrate)){
+                request.getCloudServiceID(), vmsToMigrate)) {
 
-                VirtualMachine vmMigrating = getById(request.getVirtualMachineID(),virtualMachines);
+                VirtualMachine vmMigrating = getById(request.getVirtualMachineID(), request.getCloudServiceID(),
+                    virtualMachines);
                 vmEndTimeMigration = Utils.updateVmEndTimeMigration(vmsToMigrate, vmsMigrationEndTimes,
                         vmEndTimeMigration,
                         vmMigrating);
@@ -113,8 +114,11 @@ public class ThresholdBasedApproach {
                 Float placementScore = ObjectivesFunctions.getDistanceOrigenByTime(request.getTime(),
                         maxPower, powerByTime, revenueByTime, wastedResourcesRatioByTime);
 
+                DynamicVMP.updateLeasingCosts(derivedVMs);
                 // Print the Placement Score by Time t
-                Utils.printToFile( Utils.OUTPUT + Utils.PLACEMENT_SCORE_BY_TIME + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, placementScore);
+//                Utils.checkPathFolders(Constant.PLACEMENT_SCORE_BY_TIME_FILE);
+                // Print the Placement Score by Time t
+//                Utils.printToFile( Constant.PLACEMENT_SCORE_BY_TIME_FILE + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, placementScore);
 
                 timeUnit = actualTimeUnit;
 
@@ -132,7 +136,7 @@ public class ThresholdBasedApproach {
 
                     for (PhysicalMachine pm : physicalMachines) {
                         vmsInPM = Utils.filterVMsByPM(virtualMachines, pm.getId());
-                        if (Constraints.isPMOverloaded(pm)) {
+                        if (Constraints.isPMOverloaded(pm) && !vmsInPM.isEmpty()) {
                             vmsToMigrateFromPM.clear();
                             //the physical machine is overloaded, select the vms to migrate from this pm
                             vmsToMigrateFromPM = Utils.getVMsToMigrate(pm,vmsInPM);

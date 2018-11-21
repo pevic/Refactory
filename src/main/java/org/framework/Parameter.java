@@ -54,7 +54,7 @@ public class Parameter {
     public static Boolean FAULT_TOLERANCE;
 
     /**
-     * List of protection factor per resource:
+     * Protection Factor:
      * It can take values between 0 and 1,where
      * <ul>
      *     <li>

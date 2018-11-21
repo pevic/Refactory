@@ -22,6 +22,7 @@ public class Constant {
     public static final String RECONFIGURATION_CALL_TIMES_FILE = Utils.OUTPUT + "reconfiguration_call_times";
     public static final String ECONOMICAL_PENALTIES_FILE = Utils.OUTPUT + "economical_penalties";
     public static final String LEASING_COSTS_FILE = Utils.OUTPUT + "leasing_costs";
+    public static final String PLACEMENT_SCORE_BY_TIME_FILE = Utils.OUTPUT + "placement_score_by_time/";
 
     /**
      * Not a constant but once is setted, is used as
@@ -31,12 +32,12 @@ public class Constant {
     /**
      * Heuristics Algorithms
      */
-    public static final String BFD = "BFD";
-    public static final String FFD = "FFD";
-    public static final String BF = "BF";
-    public static final String FF = "FF";
-    public static final String WF = "WF";
-
+    public static final String BFD  = "BFD";
+    public static final String FFD  = "FFD";
+    public static final String BF   = "BF";
+    public static final String FF   = "FF";
+    public static final String WF   = "WF";
+    public static final String OS   = "OS";
     /**
      * Weight for Weighted Sum (Online)
      */
@@ -64,6 +65,7 @@ public class Constant {
      * HEURISTIC_MAP.put("WF", 2);
      * HEURISTIC_MAP.put("FFD", 3);
      * HEURISTIC_MAP.put("BFD", 4);
+     * HEURISTIC_MAP.put("OS", 5);
      */
     public static final Map<String, Integer> HEURISTIC_MAP;
     static {
@@ -73,6 +75,7 @@ public class Constant {
         HEURISTIC_MAP.put("WF", 2);
         HEURISTIC_MAP.put("FFD", 3);
         HEURISTIC_MAP.put("BFD", 4);
+        HEURISTIC_MAP.put("OS", 5);
     }
 
     private Constant() {

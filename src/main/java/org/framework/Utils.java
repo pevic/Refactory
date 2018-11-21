@@ -17,6 +17,8 @@ import org.framework.reconfigurationAlgorithm.memeticAlgorithm.MASettings;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
@@ -39,10 +41,9 @@ public class Utils {
     public static final String CANCELLATION = "CANCELLATION";
     public static final String UPDATE_BASED = "UPDATE-BASED";
 
-    public static final String OUTPUT = "outputs/";
-    public static final String PLACEMENT_SCORE_BY_TIME = "placement_score_by_time/";
+    public static String OUTPUT = "outputs/";
 
-    public static final String INPUT = "inputs/";
+    public static String INPUT = "inputs/";
 
     public static final String SUM = "SUM";
     public static final String SUB = "SUB";
@@ -293,6 +294,7 @@ public class Utils {
 
 	    if(toPrint instanceof Collection<?>){
 		    List<?> toPrintList = (ArrayList<String>)toPrint;
+
 		    toPrintList.forEach(consumer -> {
 			    try {
 				    write(Paths.get(file), consumer.toString().getBytes(),StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -303,7 +305,8 @@ public class Utils {
 		    });
 
 	    }else if(toPrint instanceof  Map<?,?>){
-		    Map<Integer,Float> toPrintMap  = (Map<Integer,Float>)toPrint;
+
+            Map<Integer,Float> toPrintMap  = (Map<Integer,Float>)toPrint;
 		    for (Map.Entry<Integer, Float> entry : toPrintMap.entrySet()) {
 			    try {
 				    write(Paths.get(file), entry.getValue().toString().getBytes(),StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -313,7 +316,8 @@ public class Utils {
 			    }
 		    }
 	    }else{
-		    try {
+
+            try {
 			    write(Paths.get(file), toPrint.toString().getBytes(),StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 			    write(Paths.get(file), "\n".getBytes(), StandardOpenOption.APPEND);
 		    } catch (IOException e) {
@@ -402,7 +406,6 @@ public class Utils {
         settings.setExecutionDuration(Parameter.EXECUTION_DURATION);          // set the estimated duration of execution of the algorithm
         settings.setExecutionInterval(Parameter.INTERVAL_EXECUTION_MEMETIC);  // set the the interval of time to execute the algorithm
         settings.setFaultTolerance(Parameter.FAULT_TOLERANCE);                // set the flag to consider or not the fault tolerance constraint
-        settings.setExecutionFirstTime(3);
 
         if (isFullMeme){
             settings.setPopulationSize(Parameter.POPULATION_SIZE);
@@ -447,7 +450,7 @@ public class Utils {
 		//collect the vm to remove from the placement.VirtualMachine
 		for (VirtualMachine vm : placement.getVirtualMachineList()){
 			//if the vm is dead
-			if (vm.getTend() <= currentTimeUnit) {
+			if (vm.getTend() < currentTimeUnit) {
 				toRemoveVMs.add(vm);
 				pm = PhysicalMachine.getById(vm.getPhysicalMachine(),physicalMachineList);
 				for(iteratorResource=0;iteratorResource<numberOfResources;iteratorResource++){
@@ -465,6 +468,8 @@ public class Utils {
                 toRemoveVMs.add(dvm);
             }
         });
+	    placement.getDerivedVMs().removeAll(toRemoveVMs);
+	    toRemoveVMs.clear();
 	}
 
     /**
@@ -496,7 +501,7 @@ public class Utils {
         Integer timeEndMigrationSec;
 		Integer vmEndTimeMigration;
         for(VirtualMachine vm : migratedVirtualMachines){
-            timeEndMigrationSec = Math.round((vm.getResources().get(ResourcesEnum.RAM.getIndex())*byteToBitsFactor)/ Parameter.LINK_CAPACITY);
+            timeEndMigrationSec = (int)Math.ceil((double)vm.getResources().get(ResourcesEnum.RAM.getIndex())*byteToBitsFactor/ Parameter.LINK_CAPACITY);
 			vmEndTimeMigration = currentTimeUnit + secondsToTimeUnit(timeEndMigrationSec, Constant.TIMEUNIT_DURATION);
             timeEndMigrationList.add(vmEndTimeMigration);
         }
@@ -505,20 +510,21 @@ public class Utils {
 
     /**
      * Obtains the list of virtual machines to migrate
-     * @param newVirtualMachineList List of Virtual Machines
-     * @param oldVirtualMachineList List of Virtual Machines (after migration)
+     * @param reconfPlacement List of Virtual Machines
+     * @param actualPlacement List of Virtual Machines (after migration)
      * @return List of Virtual Machine
      */
-	public static List<VirtualMachine> getVMsToMigrate(List<VirtualMachine> newVirtualMachineList, List<VirtualMachine> oldVirtualMachineList){
+	public static List<VirtualMachine> getVMsToMigrate(List<VirtualMachine> reconfPlacement, List<VirtualMachine> actualPlacement){
         int iterator;
-        int oldPosition;
+        int actualPosition;
         int newPosition;
         List<VirtualMachine> vmsToMigrate = new ArrayList<>();
-        for(iterator=0;iterator<oldVirtualMachineList.size();iterator++){
-            oldPosition = oldVirtualMachineList.get(iterator).getPhysicalMachine();
-            newPosition = newVirtualMachineList.get(iterator).getPhysicalMachine();
-            if(oldPosition!=newPosition && newPosition!=0){
-                vmsToMigrate.add(newVirtualMachineList.get(iterator));
+        for(iterator=0;iterator<actualPlacement.size();iterator++){
+            System.out.printf("\n%d %d", actualPlacement.size(), reconfPlacement.size());
+            actualPosition = actualPlacement.get(iterator).getPhysicalMachine();
+            newPosition = reconfPlacement.get(iterator).getPhysicalMachine();
+            if(actualPosition!=newPosition && newPosition!=0){
+                vmsToMigrate.add(reconfPlacement.get(iterator));
             }
         }
 
@@ -642,12 +648,14 @@ public class Utils {
         int penaltyFactorCount = (int) parameter.stream().filter(line -> line.contains("PENALTY_FACTOR")).count();
 
         if(parameterMap.get("APPROACH")!=null){
-            Parameter.APPROACH = (String) parameterMap.get("VMPr");
-
-            if(Parameter.APPROACH.equals("DISTRIBUTED")){
+            Parameter.APPROACH = (String) parameterMap.get("APPROACH");
+              if(Parameter.APPROACH.equals("DISTRIBUTED")){
                 Parameter.ALGORITHM = 2;
             }
         }
+        if (parameterMap.get("APPROACH").equals("NULL")){
+            Parameter.ALGORITHM = 0;
+            }
 
         if(parameterMap.get("VMPr")!=null) {
             Parameter.VMPR_ALGORITHM = (String) parameterMap.get("VMPr");
@@ -667,6 +675,15 @@ public class Utils {
             }
         }
         Parameter.HEURISTIC_CODE = (String) parameterMap.get("iVMP");
+
+        //check restrictions
+        if (parameterMap.get("APPROACH").equals("DISTRIBUTED")){
+            if ( parameterMap.get("VMPr")!=null || parameterMap.get("VMPr_TRIGGERING")!=null) {
+                System.out.println("Error");
+                System.exit(0);
+            }
+        }
+
         Parameter.PM_CONFIG = (String) parameterMap.get("PM_CONFIG");
         Parameter.DERIVE_COST = new Float ((String) parameterMap.get("DERIVE_COST"));
         Parameter.FAULT_TOLERANCE = Boolean.getBoolean( (String) parameterMap.get("FAULT_TOLERANCE"));
@@ -725,13 +742,15 @@ public class Utils {
     }
 
     public static void prepareFilesSuffix() {
+        String time = java.time.LocalDateTime.now().toString().replace("-","_").replace("T","_" ).replace(":","_");
         Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME =
                 "_A" + Parameter.ALGORITHM +
                         "_" + Parameter.HEURISTIC_CODE +
                         "_" + Parameter.PM_CONFIG +
                         "_" + Parameter.DERIVE_COST +
                         "_" + Parameter.EXECUTION_DURATION +
-                        "_" + Parameter.SCALARIZATION_METHOD;
+                        "_" + Parameter.SCALARIZATION_METHOD +
+                        "_" + time;
 
         int repeatedFileCount = 0;
         File file;
@@ -739,7 +758,7 @@ public class Utils {
         String newFileSuffix = "";
         while ( finding ) {
             newFileSuffix = repeatedFileCount == 0 ? "" : " ("+String.format("%03d",repeatedFileCount)+")";
-            file = new File(Constant.POWER_CONSUMPTION_FILE
+            file = new File(Constant.SCENARIOS_SCORES
                     + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME
                     + newFileSuffix);
 
@@ -872,42 +891,6 @@ public class Utils {
 
 	}
 
-	public static Float getAvgPenaltyNormalized(Map<Integer, Float> penaltyByTime){
-	    List<Float> penaltyByTimeList = penaltyByTime.entrySet().stream().map(r->{
-	        Float value = r.getValue();
-            return value;
-	    }).collect(Collectors.toList());
-
-        return getAvgNormalized(penaltyByTimeList);
-    }
-
-
-    public static Float getAvgNormalized(List<Float> list) {
-        if(list.size()==0){
-            return 0.0F;
-        }else {
-            Float min = list.get(0);
-            Float max = list.get(0);
-
-            for (Float leasing : list) {
-                if (leasing > max) {
-                    max = leasing;
-                }
-                if (leasing < min) {
-                    min = leasing;
-                }
-            }
-
-            Float normalizedValue;
-            for (int i = 0; i < list.size(); i++) {
-                normalizedValue = normalizeValue(list.get(i), min, max);
-                list.set(i, normalizedValue);
-            }
-
-            return average(list);
-        }
-    }
-
 	/**
 	 *
 	 * @param wastedResourcesByTime Map of Wasted Resources By Time
@@ -930,7 +913,7 @@ public class Utils {
     public static List<VirtualMachine> getVMsToMigrate(PhysicalMachine pm, List<VirtualMachine> vmsInPM) {
 
         PhysicalMachine pmCopy = new PhysicalMachine(pm.getId(),pm.getPowerMax(),pm.getResources(),pm.getResourcesRequested(),
-                pm.getUtilization());
+                pm.getUtilization(), pm.getResourcesReserved());
         List<VirtualMachine> vmsToMigrate = new ArrayList<>();
         MemoryComparator comparator =  new MemoryComparator();
         VirtualMachine vm;
@@ -986,6 +969,34 @@ public class Utils {
 
         return acoSettings;
     }
+
+    /**
+     * Create intermediate folders present in a path if they do not exist
+     * @param pathFolders
+     */
+    public static void checkPathFolders(String pathFolders){
+        Path path = Paths.get(pathFolders);
+
+        if(!Files.exists(path))
+        {
+            File dir = new File(pathFolders);
+            dir.mkdirs();
+        }
+    }
+
+
+    /**
+     * Check if the folders of the output path exist and set the input-output paths for the experiments
+     * @param parametersFilePath
+     * @param outputFolderPath
+     */
+    public static void preprocessInputOutputPaths(String parametersFilePath,String outputFolderPath){
+        Path inputParametersPath = Paths.get(parametersFilePath);
+        checkPathFolders(outputFolderPath);
+        Utils.INPUT = inputParametersPath.getParent().toString()+"/";
+        Utils.OUTPUT = outputFolderPath;
+    }
+
 
 
 

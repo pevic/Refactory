@@ -21,7 +21,6 @@ public class MASettings {
     private	Double crossoverProb;
 	private	Integer executionInterval;
 	private	Integer executionDuration;
-    private Integer executionFirstTime;
     private	Boolean faultTolerance;
 
     public MASettings(){
@@ -93,14 +92,4 @@ public class MASettings {
 	public void setExecutionDuration(Integer executionDuration) {
 		this.executionDuration = executionDuration;
 	}
-
-    public Integer getExecutionFirstTime() {
-
-        return executionFirstTime;
     }
-
-    public void setExecutionFirstTime(final Integer executionFirstTime) {
-
-        this.executionFirstTime = executionFirstTime;
-    }
-}

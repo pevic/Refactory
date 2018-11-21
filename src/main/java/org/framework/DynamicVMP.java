@@ -4,6 +4,7 @@
  * Author: Saúl Zalimben (szalimben93@gmail.com)
  * Author: Leonardo Benitez  (benitez.leonardo.py@gmail.com)
  * Author: Augusto Amarilla (agu.amarilla@gmail.com)
+ * Author: Carolina Pereira (pereira-carol@outlook.com)
  * 22/8/2016.
  */
 
@@ -14,7 +15,9 @@ import org.framework.algorithm.cleverReconfiguration.CleverReconfiguration;
 import org.framework.algorithm.periodicMigration.PeriodicMigration;
 import org.framework.algorithm.stateOfArt.StateOfArt;
 import org.framework.algorithm.thresholdBasedApproach.ThresholdBasedApproach;
+import org.framework.algorithm.openStack.OpenStack;
 import org.framework.iterativeAlgorithm.Heuristics;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,10 +50,11 @@ public class DynamicVMP {
     private static final Algorithm[] algorithms;
     static {
         algorithms = new Algorithm[]{
-                PeriodicMigration::periodicMigrationManager,            // Alg0
-                StateOfArt::stateOfArtManager,                          // Alg1
-                ThresholdBasedApproach::thresholdBasedApproachManager,  // Alg2
-                CleverReconfiguration::cleverReconfigurationgManager,   // Alg3
+                PeriodicMigration::periodicMigrationManager,            // Alg0 - Periodic with Update
+                StateOfArt::stateOfArtManager,                          // Alg1 - Periodic with Cancelacion
+                ThresholdBasedApproach::thresholdBasedApproachManager,  // Alg2 - Beloglazob
+                CleverReconfiguration::cleverReconfigurationgManager,   // Alg3 - Proposal
+                OpenStack::openStackManager,                            // Alg4 - OpenStack Filter Scheduler
         };
     }
 
@@ -60,6 +64,13 @@ public class DynamicVMP {
     public static Integer timeSimulated;
     public static Integer initialTimeUnit;
     public static Integer vmUnique = 0;
+
+
+    /**
+     *  ScenariosResults and ExperimentsResults
+     */
+    public static List<Float> scenariosResult = new ArrayList<Float>();
+    public static List<Float> experimentsResult = new ArrayList<Float>();
 
     /**
      * A priori Values
@@ -74,8 +85,6 @@ public class DynamicVMP {
      */
     static Map<Integer, Float> revenueAprioriTime = new HashMap<>();
     static Map<Integer, Float> migratedMemoryAprioriTime = new HashMap<>();
-    private static Map<Integer, Float> economicalPenaltiesAprioriTime = new HashMap<>();
-    private static List<Float> leasingCostsApriori = new ArrayList<>();
 
     /**
      *  Map {VM_ID, Violation} = Violation per VM, per Time, per Resources
@@ -130,7 +139,7 @@ public class DynamicVMP {
         // If current_time is equals to VM tinit, allocated VM
         if (s.getTime() <= s.getTinit()) {
             if (Heuristics.getHeuristics()[code]
-                    .useHeuristic(vm, physicalMachines, virtualMachines, derivedVMs)) {
+                    .useHeuristic(vm, physicalMachines, virtualMachines, derivedVMs, false)) {
                 requests[0]++;
             } else {
                 // Derive Virtual Machine
@@ -152,6 +161,7 @@ public class DynamicVMP {
     }
 
     /**
+     * VMs Migration
      * @param code             Heuristic Code
      * @param physicalMachines List of Physical Machines
      * @param virtualMachines  List of allocated Virtual Machines
@@ -167,13 +177,13 @@ public class DynamicVMP {
 
         for (VirtualMachine vm : vmToMigrate) {
             hostPm = PhysicalMachine.getById(vm.getPhysicalMachine(), physicalMachines);
-
+            VirtualMachine migratedVM = vm.cloneVM();
             for (PhysicalMachine pm : physicalMachines) {
 
                 if(hostPm != null && !pm.getId().equals(hostPm.getId())
                     && Constraints.checkResources(pm, null, vm, virtualMachines, true)
                     && Heuristics.getHeuristics()[code]
-                        .useHeuristic(vm, physicalMachines, virtualMachines, derivedVMs)) {
+                        .useHeuristic(migratedVM, physicalMachines, virtualMachines, derivedVMs, true)) {
 
                     virtualMachines.remove(vm);
                     hostPm.updatePMResources(vm, Utils.SUB);
@@ -200,7 +210,7 @@ public class DynamicVMP {
         Integer[] requestsProcessAfterReconf = initRequestProcess();
 
         // List of missed requests by Memetic Algorithm order by Revenue (excepts removed VM)
-        List<Scenario> cloneScenario = Scenario.cloneScneario(workload, startTimeMemeticAlg, endTimeMemeticAlg);
+        List<Scenario> cloneScenario = Scenario.cloneScenario(workload, startTimeMemeticAlg, endTimeMemeticAlg);
 
         cloneScenario.forEach(request ->
             runHeuristics(request, code, placement.getPhysicalMachines(), placement.getVirtualMachineList(),
@@ -228,6 +238,7 @@ public class DynamicVMP {
      *          <li> WF -> Worst Fit </li>
      *          <li> FFD -> First Fit Decreasing </li>
      *          <li> BFD -> Best Fit Decreasing </li>
+     *          <li> OS -> OpenStack </li>
      *      </ul>
      *  </li>
      *  <li>
@@ -357,8 +368,12 @@ public class DynamicVMP {
         if(0 == args.length) {
             logger.log(Level.INFO, "Some arguments are missing!");
         }
-        String parameterFile = args[0];
-        loadParameters(scenariosFiles, parameterFile);
+        String parameterFile0 = args[0];
+        String parameterFile1 = args[1];
+        String parameterFile2 = args[2];
+        String outputFolderPath = args[3];
+        Utils.preprocessInputOutputPaths(parameterFile0,outputFolderPath);
+        loadParameters(scenariosFiles, parameterFile0, parameterFile1, parameterFile2);
 
         logger.log(Level.INFO, "EXECUTING EXPERIMENTS");
 
@@ -367,6 +382,15 @@ public class DynamicVMP {
             // logger.log(Level.INFO, scenarioFile);
             launchExperiments(Parameter.HEURISTIC_CODE, Parameter.PM_CONFIG, scenarioFile);
         }
+
+       // experimentsResult.add(scenariosResult.stream().mapToDouble(Float::parseFloat).average().orElse(0.0));
+        Double avg = scenariosResult.stream().mapToDouble(Float::doubleValue).average().orElse(0.0);
+        experimentsResult.add(avg.floatValue());
+        experimentsResult.add(Collections.max(scenariosResult));
+        experimentsResult.add(Collections.min(scenariosResult));
+//        System.out.println(scenariosResult);
+
+        Utils.printToFile(Constant.SCENARIOS_SCORES + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, experimentsResult);
         logger.log(Level.INFO, "ENDING EXPERIMENTS");
 
     }
@@ -376,10 +400,13 @@ public class DynamicVMP {
      * @param parameterFile  Parameter File
      * @throws IOException
      */
-    private static void loadParameters(ArrayList<String> scenariosFiles, String parameterFile) throws IOException {
+    private static void loadParameters(ArrayList<String> scenariosFiles, String parameterFile, String parameterFile1, String parameterFile2) throws IOException {
 
-        try (Stream<String> stream = Files.lines(Paths.get(parameterFile))) {
-            Utils.loadParameter(scenariosFiles, stream);
+        try (Stream<String> stream = Files.lines(Paths.get(parameterFile));
+             Stream<String> stream1 = Files.lines(Paths.get(parameterFile1));
+             Stream<String> stream2 = Files.lines(Paths.get(parameterFile2));
+             Stream<String> aux = Stream.concat(stream, stream1)) {
+            Utils.loadParameter(scenariosFiles, Stream.concat(aux,stream2));
         } catch (IOException e) {
             Logger.getLogger(DynamicVMP.DYNAMIC_VMP).log(Level.SEVERE, "Error trying to load experiments parameters.");
             throw e;
@@ -396,6 +423,7 @@ public class DynamicVMP {
      */
     private static void launchExperiments(String heuristicCode, String pmConfig, String scenarioFile)
             throws IOException, InterruptedException, ExecutionException {
+
         // VARIABLES
         List<PhysicalMachine> physicalMachines = new ArrayList<>();
         List<Scenario> scenarios = new ArrayList<>();
@@ -405,8 +433,8 @@ public class DynamicVMP {
         Integer[] requestsProcess = initRequestProcess();
         Float[] realRevenue = new Float[]{0F};
 
-        Files.write(Paths.get(Utils.OUTPUT + Utils.PLACEMENT_SCORE_BY_TIME + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME),
-                (scenarioFile + "\n" ).getBytes(), StandardOpenOption.CREATE);
+   //     Files.write(Paths.get(Utils.OUTPUT + Utils.PLACEMENT_SCORE_BY_TIME + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME),
+    //            (scenarioFile + "\n" ).getBytes(), StandardOpenOption.CREATE);
 
         // LIST
         List<Resources> wastedResources = new ArrayList<>();
@@ -448,14 +476,18 @@ public class DynamicVMP {
 
         Float scenarioScored = ObjectivesFunctions.getScenarioScore(revenueByTime, placements, realRevenue);
 
-        Utils.printToFile(Constant.POWER_CONSUMPTION_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgPwConsumptionNormalized(powerByTime));
-        Utils.printToFile(Constant.WASTED_RESOURCES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgResourcesWNormalized(wastedResourcesRatioByTime));
-        Utils.printToFile(Constant.ECONOMICAL_REVENUE_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgRevenueNormalized(revenueByTime));
-        Utils.printToFile(Constant.WASTED_RESOURCES_RATIO_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, wastedResources);
-        Utils.printToFile(Constant.SCENARIOS_SCORES + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, scenarioScored);
-        Utils.printToFile(Constant.RECONFIGURATION_CALL_TIMES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME,"\n");
-        Utils.printToFile(Constant.ECONOMICAL_PENALTIES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgPenaltyNormalized(DynamicVMP.economicalPenaltiesAprioriTime));
-        Utils.printToFile(Constant.LEASING_COSTS_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgNormalized(DynamicVMP.leasingCostsApriori));
+//        Utils.printToFile(Constant.POWER_CONSUMPTION_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgPwConsumptionNormalized(powerByTime));
+//        Utils.printToFile(Constant.WASTED_RESOURCES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgResourcesWNormalized(wastedResourcesRatioByTime));
+//        Utils.printToFile(Constant.ECONOMICAL_REVENUE_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgRevenueNormalized(revenueByTime));
+//       Utils.printToFile(Constant.WASTED_RESOURCES_RATIO_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, wastedResources);
+
+        scenariosResult.add(scenarioScored);
+        System.out.println(scenarioScored);
+//        Utils.printToFile(Constant.SCENARIOS_SCORES + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, scenarioScored);
+
+//        Utils.printToFile(Constant.RECONFIGURATION_CALL_TIMES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME,"\n");
+//        Utils.printToFile(Constant.ECONOMICAL_PENALTIES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgPenaltyNormalized(DynamicVMP.economicalPenaltiesAprioriTime));
+//        Utils.printToFile(Constant.LEASING_COSTS_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgNormalized(DynamicVMP.leasingCostsApriori));
     }
 
     /**
@@ -475,7 +507,7 @@ public class DynamicVMP {
                 wastedResources.add(new Resources());
                 wastedResourcesRatioByTime.put(timeAdjust, 0F);
                 revenueByTime.put(timeAdjust, 0F);
-                Utils.printToFile(Utils.OUTPUT + Utils.PLACEMENT_SCORE_BY_TIME + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, 0);
+  //              Utils.printToFile(Utils.OUTPUT + Utils.PLACEMENT_SCORE_BY_TIME + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, 0);
                 timeAdjust++;
                 timeSimulated += 1;
             }
@@ -574,12 +606,13 @@ public class DynamicVMP {
         return requestsProcess;
     }
 
-    public static Boolean isVmBeingMigrated(Integer virtualMachineId, List<VirtualMachine> vmsToMigrate) {
+    public static Boolean isVmBeingMigrated(Integer virtualMachineId, Integer cloudServiceId, List<VirtualMachine>
+        vmsToMigrate) {
 		Integer iteratorVM;
 	    VirtualMachine vmMigrated;
 	    for(iteratorVM=0;iteratorVM<vmsToMigrate.size();iteratorVM++){
 			vmMigrated = vmsToMigrate.get(iteratorVM);
-			if(vmMigrated.getId().equals(virtualMachineId)) {
+			if(vmMigrated.getId().equals(virtualMachineId) && vmMigrated.getCloudService().equals(cloudServiceId) ) {
 				return true;
 			}
 		}
@@ -597,12 +630,6 @@ public class DynamicVMP {
         Float newAPrioriRevenue = currentRevenue + violationRevenue;
         DynamicVMP.revenueAprioriTime.put(timeViolation, newAPrioriRevenue);
 
-        if(economicalPenaltiesAprioriTime.get(timeViolation)==null){
-            economicalPenaltiesAprioriTime.put(timeViolation, violationRevenue);
-        }else{
-            Float old = economicalPenaltiesAprioriTime.get(timeViolation);
-            economicalPenaltiesAprioriTime.put(timeViolation, old+violationRevenue);
-        }
         economicalPenalties += violationRevenue;
     }
 
@@ -614,8 +641,6 @@ public class DynamicVMP {
             leasingCostRevenue += dvm.getResources().get(1) * dvm.getRevenue().getRam() * Parameter.DERIVE_COST;
             leasingCostRevenue += dvm.getResources().get(2) * dvm.getRevenue().getNet() * Parameter.DERIVE_COST;
         }
-
-        leasingCostsApriori.add(leasingCostRevenue);
 
         leasingCosts += leasingCostRevenue;
     }

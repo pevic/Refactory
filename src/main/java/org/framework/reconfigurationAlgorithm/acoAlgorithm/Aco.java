@@ -272,13 +272,23 @@ public class Aco {
                 vm.setPhysicalMachine(pm.getId());
 
                 // update PM capacity
-                oldPM.updateResource(0, vmResource0, "SUB");
-                oldPM.updateResource(1, vmResource1, "SUB");
-                oldPM.updateResource(2, vmResource2, "SUB");
 
-                pm.updateResource(0, vmResource0, "SUM");
-                pm.updateResource(1, vmResource1, "SUM");
-                pm.updateResource(2, vmResource2, "SUM");
+                oldPM.updateResource(0, vm.getResources().get(0), vm.getUtilization().get(0), "SUB");
+                oldPM.updateResource(1, vm.getResources().get(1), vm.getUtilization().get(1), "SUB");
+                oldPM.updateResource(2, vm.getResources().get(2), vm.getUtilization().get(2), "SUB");
+
+                pm.updateResource(0, vm.getResources().get(0), vm.getUtilization().get(0), "SUM");
+                pm.updateResource(1, vm.getResources().get(1), vm.getUtilization().get(1), "SUM");
+                pm.updateResource(2, vm.getResources().get(2), vm.getUtilization().get(2), "SUM");
+
+
+//                oldPM.updateResource(0, vmResource0, "SUB");
+//                oldPM.updateResource(1, vmResource1, "SUB");
+//                oldPM.updateResource(2, vmResource2, "SUB");
+
+//                pm.updateResource(0, vmResource0, "SUM");
+//                pm.updateResource(1, vmResource1, "SUM");
+//                pm.updateResource(2, vmResource2, "SUM");
             }
 
 ////            debug only

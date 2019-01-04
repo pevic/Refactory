@@ -29,6 +29,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 public class DynamicVMP {
 
     /**
@@ -364,6 +367,8 @@ public class DynamicVMP {
      */
     public static void main (String[] args) throws IOException, InterruptedException, ExecutionException {
 
+        long lStartTime = new Date().getTime();
+
         ArrayList<String> scenariosFiles  = new ArrayList<>();
         if(0 == args.length) {
             logger.log(Level.INFO, "Some arguments are missing!");
@@ -390,7 +395,10 @@ public class DynamicVMP {
         experimentsResult.add(Collections.min(scenariosResult));
 //        System.out.println(scenariosResult);
 
-        Utils.printToFile(Constant.SCENARIOS_SCORES + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, experimentsResult);
+        long lEndTime = new Date().getTime();
+        float output_time = ((float)lEndTime - lStartTime)/1000;
+        experimentsResult.add(output_time);
+        Utils.printToFile(Constant.F1_F2_F3_RESULTS + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, experimentsResult);
         logger.log(Level.INFO, "ENDING EXPERIMENTS");
 
     }
@@ -476,16 +484,16 @@ public class DynamicVMP {
 
         Float scenarioScored = ObjectivesFunctions.getScenarioScore(revenueByTime, placements, realRevenue);
 
-//        Utils.printToFile(Constant.POWER_CONSUMPTION_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgPwConsumptionNormalized(powerByTime));
-//        Utils.printToFile(Constant.WASTED_RESOURCES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgResourcesWNormalized(wastedResourcesRatioByTime));
-//        Utils.printToFile(Constant.ECONOMICAL_REVENUE_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgRevenueNormalized(revenueByTime));
-//       Utils.printToFile(Constant.WASTED_RESOURCES_RATIO_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, wastedResources);
+        Utils.printToFile(Constant.POWER_CONSUMPTION_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgPwConsumptionNormalized(powerByTime));
+        Utils.printToFile(Constant.WASTED_RESOURCES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgResourcesWNormalized(wastedResourcesRatioByTime));
+        Utils.printToFile(Constant.ECONOMICAL_REVENUE_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgRevenueNormalized(revenueByTime));
+       Utils.printToFile(Constant.WASTED_RESOURCES_RATIO_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, wastedResources);
 
         scenariosResult.add(scenarioScored);
         System.out.println(scenarioScored);
-//        Utils.printToFile(Constant.SCENARIOS_SCORES + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, scenarioScored);
+        Utils.printToFile(Constant.SCENARIOS_SCORES + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, scenarioScored);
 
-//        Utils.printToFile(Constant.RECONFIGURATION_CALL_TIMES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME,"\n");
+        Utils.printToFile(Constant.RECONFIGURATION_CALL_TIMES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME,"\n");
 //        Utils.printToFile(Constant.ECONOMICAL_PENALTIES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgPenaltyNormalized(DynamicVMP.economicalPenaltiesAprioriTime));
 //        Utils.printToFile(Constant.LEASING_COSTS_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, Utils.getAvgNormalized(DynamicVMP.leasingCostsApriori));
     }

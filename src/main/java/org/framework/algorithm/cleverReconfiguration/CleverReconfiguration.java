@@ -66,11 +66,11 @@ public class CleverReconfiguration {
      * @throws ExecutionException   Multi-thread error
      */
     public static void cleverReconfigurationgManager(List<Scenario> workload, List<PhysicalMachine> physicalMachines,
-            List<VirtualMachine>
-            virtualMachines, List<VirtualMachine> derivedVMs,
-            Map<Integer, Float> revenueByTime, List<Resources> wastedResources,  Map<Integer, Float> wastedResourcesRatioByTime,
-            Map<Integer, Float> powerByTime, Map<Integer, Placement> placements, Integer code, Integer timeUnit,
-            Integer[] requestsProcess, Float maxPower, String scenarioFile)
+                                                     List<VirtualMachine>
+                                                             virtualMachines, List<VirtualMachine> derivedVMs,
+                                                     Map<Integer, Float> revenueByTime, List<Resources> wastedResources,  Map<Integer, Float> wastedResourcesRatioByTime,
+                                                     Map<Integer, Float> powerByTime, Map<Integer, Placement> placements, Integer code, Integer timeUnit,
+                                                     Integer[] requestsProcess, Float maxPower, String scenarioFile)
             throws IOException, InterruptedException, ExecutionException {
 
         List<APrioriValue> aPrioriValuesList = new ArrayList<>();
@@ -121,7 +121,7 @@ public class CleverReconfiguration {
                 isUpdateVmUtilization = actualTimeUnit <= vmEndTimeMigration;
             }
             DynamicVMP.runHeuristics(request, code, physicalMachines, virtualMachines, derivedVMs, requestsProcess,
-                isUpdateVmUtilization);
+                    isUpdateVmUtilization);
 
             // Check if its the last request or a variation of time unit will occurs.
             if (nextTimeUnit == -1 || !actualTimeUnit.equals(nextTimeUnit)) {
@@ -135,12 +135,13 @@ public class CleverReconfiguration {
                         maxPower, powerByTime, revenueByTime, wastedResourcesRatioByTime);
 
                 DynamicVMP.updateLeasingCosts(derivedVMs);
-                Utils.checkPathFolders(Constant.PLACEMENT_SCORE_BY_TIME_FILE);
+       //         Utils.checkPathFolders(Constant.PLACEMENT_SCORE_BY_TIME_FILE);
                 // Print the Placement Score by Time t
 //                Utils.printToFile( Constant.PLACEMENT_SCORE_BY_TIME_FILE + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, placementScore);
 
                 timeUnit = actualTimeUnit;
 
+                //create the placement for the actual time unit
                 Placement heuristicPlacement = new Placement(PhysicalMachine.clonePMsList(physicalMachines),
                         VirtualMachine.cloneVMsList(virtualMachines),
                         VirtualMachine.cloneVMsList(derivedVMs), placementScore);
@@ -153,7 +154,7 @@ public class CleverReconfiguration {
                     // Collect O.F. historical values
                     valuesSelectedForecast.clear();
                     for(int timeIterator = nextTimeUnit - Parameter.HISTORICAL_DATA_SIZE; timeIterator<=actualTimeUnit;
-                            timeIterator++){
+                        timeIterator++){
                         if(placements.get(timeIterator)!=null){
                             valuesSelectedForecast.add(placements.get(timeIterator).getPlacementScore());
                         }else{
@@ -180,35 +181,29 @@ public class CleverReconfiguration {
                                     memeConfig.getExecutionDuration())) {
                         reconfigurationTimeInit = reconfigurationTimeInit + memeConfig.getExecutionInterval();
                     }else {
-                        if(!virtualMachines.isEmpty()) {
+
+                        if (!virtualMachines.isEmpty()) {
+
                             // Get the list of a priori values
                             aPrioriValuesList = Utils.getAprioriValuesList(actualTimeUnit);
+
                             // Clone the current placement
-                        Placement reconfgPlacement = new Placement(PhysicalMachine.clonePMsList(physicalMachines),
+                            Placement reconfgPlacement = new Placement(PhysicalMachine.clonePMsList(physicalMachines),
                                     VirtualMachine.cloneVMsList(virtualMachines),
                                     VirtualMachine.cloneVMsList(derivedVMs));
 
-
-                            // Get the VMPr algorithm task
-                            if (Parameter.VMPR_ALGORITHM.equals("MEMETIC")) {
-                                // Config the call for the memetic algorithm
-                                staticReconfgTask = new StaticReconfMemeCall(reconfgPlacement, aPrioriValuesList,
-                                        memeConfig);
-                            } else {
-                                staticReconfgTask = new AcoCall(reconfgPlacement, aPrioriValuesList, Utils.getAcoSettings());
-                            }
+                            // Config the call for the memetic algorithm
+                            staticReconfgTask = new StaticReconfMemeCall(reconfgPlacement, aPrioriValuesList, memeConfig);
 
                             // Call the memetic algorithm in a separate thread
                             reconfgResult = executorService.submit(staticReconfgTask);
 
                             // Update the time end of the memetic algorithm execution
-
                             reconfigurationTimeEnd = reconfigurationTimeInit + memeConfig.getExecutionDuration();
-                    }
+                        }
                         //reset the reconfiguration init, trigger by forecasting
                         reconfigurationTimeInit = -1;
                     }
-
                 }else if(nextTimeUnit != -1 && actualTimeUnit.equals(reconfigurationTimeEnd)) {
                     try {
                         isReconfigurationActive=false;
@@ -222,12 +217,12 @@ public class CleverReconfiguration {
                             /* Update de virtual machine list of the placement, update VMs
                              * resources and add new VMs
                              */
-                            System.out.printf("\nBefore: actual = %d reconf = %d", placements.get(reconfigurationTimeEnd).getVirtualMachineList().size(), reconfgPlacementResult.getVirtualMachineList().size());
+//                            System.out.printf("\nBefore: actual = %d reconf = %d", placements.get(reconfigurationTimeEnd).getVirtualMachineList().size(), reconfgPlacementResult.getVirtualMachineList().size());
                             Placement reconfgPlacementMerged = DynamicVMP.updatePlacementAfterReconf(workload, Constant.BFD,
                                     reconfgPlacementResult,
                                     reconfigurationTimeInit,
                                     reconfigurationTimeEnd);
-                            System.out.printf("\nAfter: actual = %d reconf = %d", placements.get(reconfigurationTimeEnd).getVirtualMachineList().size(), reconfgPlacementMerged.getVirtualMachineList().size());
+  //                          System.out.printf("\nAfter: actual = %d reconf = %d", placements.get(reconfigurationTimeEnd).getVirtualMachineList().size(), reconfgPlacementMerged.getVirtualMachineList().size());
 
                             aPrioriValuesList = Utils.getAprioriValuesList(actualTimeUnit);
 
@@ -255,7 +250,6 @@ public class CleverReconfiguration {
                                 derivedVMs = new ArrayList<>(reconfgPlacementMerged.getDerivedVMs());
 
                                 placements.put(actualTimeUnit, reconfgPlacementMerged);
-
 
                             }
                         }

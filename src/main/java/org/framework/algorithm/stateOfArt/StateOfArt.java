@@ -2,7 +2,9 @@ package org.framework.algorithm.stateOfArt;
 
 import org.domain.*;
 import org.framework.*;
-import org.framework.reconfigurationAlgorithm.acoAlgorithm.AcoCall;
+import org.framework.DynamicVMP;
+import org.framework.ObjectivesFunctions;
+import org.framework.Utils;
 import org.framework.reconfigurationAlgorithm.concurrent.StaticReconfMemeCall;
 import org.framework.reconfigurationAlgorithm.memeticAlgorithm.MASettings;
 
@@ -73,19 +75,24 @@ public class StateOfArt {
         List<APrioriValue> aPrioriValuesList = new ArrayList<>();
         List<VirtualMachine> vmsToMigrate = new ArrayList<>();
         List<Integer> vmsMigrationEndTimes = new ArrayList<>();
+        List<Float> valuesSelectedForecast = new ArrayList<>();
+
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         MASettings memeConfig = Utils.getMemeConfig(true);
         Callable<Placement> staticReconfgTask;
         Future<Placement> reconfgResult = null;
-        Placement reconfgPlacementResult;
+        Placement reconfgPlacementResult = null;
 
         Boolean isMigrationActive = false;
         Boolean isUpdateVmUtilization = false;
+        Boolean isReconfigurationActive = false;
         Integer actualTimeUnit;
         Integer nextTimeUnit;
 
         Integer reconfigurationTimeInit = timeUnit + memeConfig.getExecutionInterval();
         Integer reconfigurationTimeEnd=-1;
+
+        Integer migrationTimeInit=-1;
         Integer migrationTimeEnd =- 1;
 
         Integer vmEndTimeMigration = 0;
@@ -116,7 +123,7 @@ public class StateOfArt {
             DynamicVMP.runHeuristics(request, code, physicalMachines, virtualMachines, derivedVMs, requestsProcess,
                     isUpdateVmUtilization);
 
-            // check if its the last request or a variation of time unit will occurs.
+            // Check if its the last request or a variation of time unit will occurs.
             if (nextTimeUnit == -1 || !actualTimeUnit.equals(nextTimeUnit)) {
 
                 //get the objective functions
@@ -140,14 +147,40 @@ public class StateOfArt {
                         VirtualMachine.cloneVMsList(derivedVMs), placementScore);
                 placements.put(actualTimeUnit, heuristicPlacement);
 
+
+                // Check the historical information
+                if(Parameter.RECOVERING_METHOD.equals(Utils.UPDATE_BASED) && nextTimeUnit!=-1 && placements.size() > Parameter.HISTORICAL_DATA_SIZE &&
+                        !isReconfigurationActive && !isMigrationActive ){
+
+                    // Collect O.F. historical values
+                    valuesSelectedForecast.clear();
+                    for(int timeIterator = nextTimeUnit - Parameter.HISTORICAL_DATA_SIZE; timeIterator<=actualTimeUnit;
+                        timeIterator++){
+                        if(placements.get(timeIterator)!=null){
+                            valuesSelectedForecast.add(placements.get(timeIterator).getPlacementScore());
+                        }else{
+                            valuesSelectedForecast.add(0F);
+                        }
+                    }
+
+                    // Check if a  call for reconfiguration is needed and set the init time
+                    if(Utils.callToReconfiguration(valuesSelectedForecast, Parameter.FORECAST_SIZE)){
+//                        Utils.printToFile(Constant.RECONFIGURATION_CALL_TIMES_FILE + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME,nextTimeUnit);
+                        reconfigurationTimeInit = nextTimeUnit;
+                        isReconfigurationActive=true;
+                    }else{
+                        reconfigurationTimeInit=-1;
+                    }
+                }
+
                 // Take a snapshot of the current placement to launch reconfiguration
                 if(nextTimeUnit!=-1 && nextTimeUnit.equals(reconfigurationTimeInit)){
 
-                    // If a new VM request cames while memetic execution, memetic algorithm is cancel.
-                    if (Parameter.RECOVERING_METHOD.equals(Utils.CANCELLATION) &&
-                            StateOfArtUtils.newVmDuringMemeticExecution(workload, reconfigurationTimeInit, reconfigurationTimeInit +
+                    // If a new VM request cames while a reconfiguration is in progress, the reconfiguration is canceled.
+                    if (Parameter.RECOVERING_METHOD.equals(Utils.CANCELLATION) && isMigrationActive && StateOfArtUtils.newVmDuringMemeticExecution(workload, reconfigurationTimeInit, reconfigurationTimeInit +
                             memeConfig.getExecutionDuration())) {
                         reconfigurationTimeInit = reconfigurationTimeInit + memeConfig.getExecutionInterval();
+
                     } else {
 
                         if(!virtualMachines.isEmpty()) {
@@ -156,18 +189,12 @@ public class StateOfArt {
                             aPrioriValuesList = Utils.getAprioriValuesList(actualTimeUnit);
 
                             // Clone the current placement
-                            Placement memeticPlacement = new Placement(PhysicalMachine.clonePMsList(physicalMachines),
+                            Placement reconfgPlacement = new Placement(PhysicalMachine.clonePMsList(physicalMachines),
                                     VirtualMachine.cloneVMsList(virtualMachines),
                                     VirtualMachine.cloneVMsList(derivedVMs));
 
-                            // Get the VMPr algorithm task
-                            if(Parameter.VMPR_ALGORITHM.equals("MEMETIC")) {
                                 // Config the call for the memetic algorithm
-                                staticReconfgTask = new StaticReconfMemeCall(memeticPlacement, aPrioriValuesList,
-                                        memeConfig);
-                            }else {
-                                staticReconfgTask = new AcoCall(memeticPlacement, aPrioriValuesList, Utils.getAcoSettings());
-                            }
+                            staticReconfgTask = new StaticReconfMemeCall(reconfgPlacement, aPrioriValuesList, memeConfig);
 
                             // Call the memetic algorithm in a separate thread
                             reconfgResult = executorService.submit(staticReconfgTask);

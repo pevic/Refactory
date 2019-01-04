@@ -519,8 +519,8 @@ public class Utils {
         int actualPosition;
         int newPosition;
         List<VirtualMachine> vmsToMigrate = new ArrayList<>();
-        for(iterator=0;iterator<actualPlacement.size();iterator++){
-            System.out.printf("\n%d %d", actualPlacement.size(), reconfPlacement.size());
+        for(iterator=0;iterator<(actualPlacement.size());iterator++){
+         //   System.out.printf("\n%d %d %d", actualPlacement.size(), reconfPlacement.size(), iterator);
             actualPosition = actualPlacement.get(iterator).getPhysicalMachine();
             newPosition = reconfPlacement.get(iterator).getPhysicalMachine();
             if(actualPosition!=newPosition && newPosition!=0){
@@ -644,11 +644,15 @@ public class Utils {
             ((HashMap) parameterMap).put(line.split("=")[0], line.split("=")[1])
         );
 
-        int protectionFactorCount = (int) parameter.stream().filter(line -> line.contains("PROTECTION_FACTOR")).count();
+//        int protectionFactorCount = (int) parameter.stream().filter(line -> line.contains("PROTECTION_FACTOR")).count();
         int penaltyFactorCount = (int) parameter.stream().filter(line -> line.contains("PENALTY_FACTOR")).count();
 
         if(parameterMap.get("APPROACH")!=null){
             Parameter.APPROACH = (String) parameterMap.get("APPROACH");
+            if (!Parameter.APPROACH.equals("DISTRIBUTED") && !Parameter.APPROACH.equals("CENTRALIZED") && !Parameter.APPROACH.equals("NULL")) {
+                System.out.println("Insert a valid APPROACH (CENTRALIZED or DISTRIBUTED)");
+                System.exit(0);
+            }
               if(Parameter.APPROACH.equals("DISTRIBUTED")){
                 Parameter.ALGORITHM = 2;
             }
@@ -679,7 +683,7 @@ public class Utils {
         //check restrictions
         if (parameterMap.get("APPROACH").equals("DISTRIBUTED")){
             if ( parameterMap.get("VMPr")!=null || parameterMap.get("VMPr_TRIGGERING")!=null) {
-                System.out.println("Error");
+                System.out.println("Error!. Please check APPOACH.");
                 System.exit(0);
             }
         }
@@ -689,8 +693,18 @@ public class Utils {
         Parameter.FAULT_TOLERANCE = Boolean.getBoolean( (String) parameterMap.get("FAULT_TOLERANCE"));
 
         Parameter.PROTECTION_FACTOR = new ArrayList<>();
-        for ( int index = 1; index <= protectionFactorCount; index++ ) {
+  /*      for ( int index = 1; index <= protectionFactorCount; index++ ) {
             Parameter.PROTECTION_FACTOR.add(new Float ((String) parameterMap.get("PROTECTION_FACTOR_"+String.format("%02d", index))));
+        }*/
+
+        if (Parameter.PM_CONFIG.equals("PM_CONFIG_LOW_LOAD") || Parameter.PM_CONFIG.equals("PM_CONFIG_MED_LOAD")){
+            Parameter.PROTECTION_FACTOR.add(0f);
+            Parameter.PROTECTION_FACTOR.add(0f);
+            Parameter.PROTECTION_FACTOR.add(0f);
+        }else{
+            Parameter.PROTECTION_FACTOR.add(0.75f);
+            Parameter.PROTECTION_FACTOR.add(0.75f);
+            Parameter.PROTECTION_FACTOR.add(0.75f);
         }
 
         Parameter.PENALTY_FACTOR = new ArrayList<>();

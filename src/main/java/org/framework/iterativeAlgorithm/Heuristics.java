@@ -291,7 +291,6 @@ public class Heuristics {
 
         //make a comparison of weights between pms and normalize it
         Collections.sort(filtering, new BestComparator());
-        //System.out.println("OS");
         //allocate in the largest weight
         if (allocateVMToDC(vm, filtering, virtualMachines, isMigration)) {
             return true;

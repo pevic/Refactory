@@ -1,8 +1,10 @@
 package org.framework.algorithm.periodicMigration;
 
 import org.domain.*;
-import org.framework.*;
-import org.framework.reconfigurationAlgorithm.acoAlgorithm.AcoCall;
+import org.framework.Constant;
+import org.framework.DynamicVMP;
+import org.framework.ObjectivesFunctions;
+import org.framework.Utils;
 import org.framework.reconfigurationAlgorithm.concurrent.StaticReconfMemeCall;
 import org.framework.reconfigurationAlgorithm.memeticAlgorithm.MASettings;
 
@@ -64,11 +66,11 @@ public class PeriodicMigration {
      * @throws ExecutionException   Multi-thread error
      */
     public static void periodicMigrationManager(List<Scenario> workload, List<PhysicalMachine> physicalMachines,
-            List<VirtualMachine>
-            virtualMachines, List<VirtualMachine> derivedVMs,
-            Map<Integer, Float> revenueByTime, List<Resources> wastedResources,  Map<Integer, Float> wastedResourcesRatioByTime,
-            Map<Integer, Float> powerByTime, Map<Integer, Placement> placements, Integer code, Integer timeUnit,
-            Integer[] requestsProcess, Float maxPower, String scenarioFile)
+                                                List<VirtualMachine>
+                                                        virtualMachines, List<VirtualMachine> derivedVMs,
+                                                Map<Integer, Float> revenueByTime, List<Resources> wastedResources,  Map<Integer, Float> wastedResourcesRatioByTime,
+                                                Map<Integer, Float> powerByTime, Map<Integer, Placement> placements, Integer code, Integer timeUnit,
+                                                Integer[] requestsProcess, Float maxPower, String scenarioFile)
             throws IOException, InterruptedException, ExecutionException {
 
         List<APrioriValue> aPrioriValuesList = new ArrayList<>();
@@ -132,7 +134,6 @@ public class PeriodicMigration {
 //                Utils.printToFile( Constant.PLACEMENT_SCORE_BY_TIME_FILE + scenarioFile + Constant.EXPERIMENTS_PARAMETERS_TO_OUTPUT_NAME, placementScore);
 
                 timeUnit = actualTimeUnit;
-
                 Placement heuristicPlacement = new Placement(PhysicalMachine.clonePMsList(physicalMachines),
                         VirtualMachine.cloneVMsList(virtualMachines),
                         VirtualMachine.cloneVMsList(derivedVMs), placementScore);
@@ -143,22 +144,17 @@ public class PeriodicMigration {
 
                     if(!virtualMachines.isEmpty()) {
 
+                            // Get the list of a priori values
+                            aPrioriValuesList = Utils.getAprioriValuesList(actualTimeUnit);
+
                         // Clone the current placement
                         Placement memeticPlacement = new Placement(PhysicalMachine.clonePMsList(physicalMachines),
                                 VirtualMachine.cloneVMsList(virtualMachines),
                                 VirtualMachine.cloneVMsList(derivedVMs));
 
-                        // Get the list of a priori values
-                        aPrioriValuesList = Utils.getAprioriValuesList(actualTimeUnit);
-
-                        // Get the VMPr algorithm task
-                        if(Parameter.VMPR_ALGORITHM.equals("MEMETIC")) {
                             // Config the call for the memetic algorithm
                             staticReconfgTask = new StaticReconfMemeCall(memeticPlacement, aPrioriValuesList,
                                     memeConfig);
-                        }else {
-                            staticReconfgTask = new AcoCall(memeticPlacement, aPrioriValuesList, Utils.getAcoSettings());
-                        }
 
                         // Call the memetic algorithm in a separate thread
                         reconfgResult = executorService.submit(staticReconfgTask);
@@ -201,12 +197,12 @@ public class PeriodicMigration {
                                 vmsToMigrate  = Utils.getVMsToMigrate(reconfgPlacementMerged.getVirtualMachineList(),
                                         placements.get(reconfigurationTimeEnd).getVirtualMachineList());
 
-                            //update de virtual machines migrated
-                            Utils.removeDeadVMsMigrated(vmsToMigrate,actualTimeUnit);
-                            //get end time of vms migrations
-                            vmsMigrationEndTimes = Utils.getTimeEndMigrationByVM(vmsToMigrate, actualTimeUnit);
-                            //update migration end
-                            migrationTimeEnd = Utils.getMigrationEndTime(vmsMigrationEndTimes);
+                                //update de virtual machines migrated
+                                Utils.removeDeadVMsMigrated(vmsToMigrate,actualTimeUnit);
+                                //get end time of vms migrations
+                                vmsMigrationEndTimes = Utils.getTimeEndMigrationByVM(vmsToMigrate, actualTimeUnit);
+                                //update migration end
+                                migrationTimeEnd = Utils.getMigrationEndTime(vmsMigrationEndTimes);
                                 isMigrationActive = !vmsToMigrate.isEmpty();
 
                                 physicalMachines = new ArrayList<>(reconfgPlacementMerged.getPhysicalMachines());

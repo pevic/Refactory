@@ -23,6 +23,7 @@ public class Constant {
     public static final String ECONOMICAL_PENALTIES_FILE = Utils.OUTPUT + "economical_penalties";
     public static final String LEASING_COSTS_FILE = Utils.OUTPUT + "leasing_costs";
     public static final String PLACEMENT_SCORE_BY_TIME_FILE = Utils.OUTPUT + "placement_score_by_time/";
+    public static final String F1_F2_F3_RESULTS = Utils.OUTPUT + "f1_f2_f3_results";
 
     /**
      * Not a constant but once is setted, is used as

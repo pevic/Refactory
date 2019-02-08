@@ -32,7 +32,38 @@ Infrastructure as a Service (IaaS) providers must support requests for virtual r
 
 Infrastructure as a Service (IaaS) providers must support requests for virtual resources in complexdynamic cloud computing environments, taking into account service elasticity and overbooking ofphysical resources. Due to the randomness of customer requests, Virtual Machine Placement (VMP)problems should be formulated under uncertainty.  This work proposes an experimental evaluationof a two-phase optimization scheme for VMP problems, studying different (i) online heuristics, (ii)overbooking protection factors and (iii) objective function scalarization methods.  The proposed ex-perimental evaluation considers an uncertain VMP formulation for the optimization of the followingthree objective functions: (i) power consumption, (ii) economical revenue, and (iii) resource utiliza-tion.  Experiments were performed considering 96 different scenarios, representing complex cloudcomputing environments.  Experimental results shows that Best-Fit and Best-Fit Decreasing heuris-tics are recommended in the incremental VMP (iVMP) phase working with the considered MemeticAlgorithm in the VMP reconfiguration (VMPr) phase, adjusting protection factors to 0.00 and 0.75in  low  and  high  CPU  load  scenarios  respectively,  while  scalarazing  the  proposed  three  objectivefunctions considering an Euclidean distance to the origin.
 
+
 ##  
+
+
+#### *"Towards Elastic Virtual Machine Placement in Overbooked OpenStack Clouds under Uncertainty"*
+
+*Jornadas de Cloud Computing & Big Data, 2018* \
+ **Authors**: F. López-Pires and B. Barán and C. Pereira and M. Velázquez and O. González \
+ **Ref.:** [JCC&BD-2018](https://github.com/marcev93/DynamicVMPFramework)
+
+###### Abstract 
+
+Cloud computing datacenters currently provide millions of virtual machines in highly dynamic Infrastructure as a Service (IaaS) markets. As a first step on implementing algorithms previously proposed by the authors for the Virtual Machine Placement (VMP) in a real-world IaaS middleware, this work presents an experimental comparison of these algorithms against current algorithms considered for solving VMP problems in OpenStack. Several experiments considering scenario-based simulations for uncertainty modelling demonstrate that the proposed algorithms present promising results for its implementation towards real-world operations. Next steps are also summarized. 
+
+
+##  
+
+
+#### *"Machine Learning Opportunities in Cloud Computing Datacenter Management for 5G Services"*
+
+
+*ITU Kaleidoscope, 2018* \
+ **Authors**: F. López-Pires and B. Barán \
+ **Ref.:** [ITU-2018](https://github.com/DynamicVMP/dynamic-vmp-framework)
+
+###### Abstract 
+
+Emerging paradigms associated to Cloud Computing operations are considered to serve as a basis to integrate 5G components and protocols. In the context of resource management for Cloud Computing Datacenters, several research challenges could addressed considering state-of-the-art machine learning techniques. This paper presents identified opportunities on improving critical resource management decisions, analyzing the potential on applying machine learning to solve these relevant problems, mainly in two-phase optimization schemes for Virtual Machine Placement (VMP). Future research directions are also presented.
+
+##
+
+
 
 To develop and execute the following items are required:
 

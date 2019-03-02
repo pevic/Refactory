@@ -154,4 +154,5 @@ scenarios.conf:
 
 #### Output Files
 The framework generates the following file:
-- *scenarios_score: contains F1, F2, F3 values
+- *scenarios_score: score per each scenario.
+- *f1_f2_f3_results: value of f1, f2 and f3 objectives functions. 
